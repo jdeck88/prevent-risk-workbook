@@ -13,6 +13,9 @@ const OUTCOMES = [
 ];
 
 const SEXES = ["Women", "Men"];
+const MAX_CALCULATOR_ROWS = 1000;
+const CALCULATOR_HEADER_ROW = 5;
+const CALCULATOR_DATA_START_ROW = 6;
 
 const MODEL_SHEETS = [
   { model: "Base", horizon: "10-year", sheet: "Table S12A Base 10yr" },
@@ -75,57 +78,64 @@ const TERM_ORDER = [
   "Constant",
 ];
 
-const calcRefs = {
-  sex: "Calculator!$B$5",
-  age: "Calculator!$B$6",
-  tc: "Calculator!$B$7",
-  hdl: "Calculator!$B$8",
-  sbp: "Calculator!$B$9",
-  diabetes: 'IF(Calculator!$B$10="Yes",1,0)',
-  smoking: 'IF(Calculator!$B$11="Yes",1,0)',
-  bmi: "Calculator!$B$12",
-  egfr: "Calculator!$B$13",
-  antihtn: 'IF(Calculator!$B$14="Yes",1,0)',
-  statin: 'IF(Calculator!$B$15="Yes",1,0)',
-  uacr: "Calculator!$B$16",
-  hba1c: "Calculator!$B$17",
-  sdi: "Calculator!$B$18",
-};
+function calcRefs(row) {
+  return {
+    sex: `Calculator!$B${row}`,
+    age: `Calculator!$C${row}`,
+    tc: `Calculator!$D${row}`,
+    hdl: `Calculator!$E${row}`,
+    sbp: `Calculator!$F${row}`,
+    diabetes: `IF(Calculator!$G${row}="Yes",1,0)`,
+    smoking: `IF(Calculator!$H${row}="Yes",1,0)`,
+    bmi: `Calculator!$I${row}`,
+    egfr: `Calculator!$J${row}`,
+    antihtn: `IF(Calculator!$K${row}="Yes",1,0)`,
+    statin: `IF(Calculator!$L${row}="Yes",1,0)`,
+    uacr: `Calculator!$M${row}`,
+    hba1c: `Calculator!$N${row}`,
+    sdi: `Calculator!$O${row}`,
+  };
+}
 
-const FORMULAS = {
-  "Age per 10 years": `(${calcRefs.age}-55)/10`,
-  "Age per 10 years squared": `((${calcRefs.age}-55)/10)^2`,
-  "non-HDL-C per 1 mmol/L": `((${calcRefs.tc}-${calcRefs.hdl})*0.02586)-3.5`,
-  "HDL-C per 0.3 mmol/L": `((${calcRefs.hdl}*0.02586)-1.3)/0.3`,
-  "SBP <110 per 20 mmHg": `(MIN(${calcRefs.sbp},110)-110)/20`,
-  "SBP ≥110 per 20 mmHg": `(MAX(${calcRefs.sbp},110)-130)/20`,
-  Diabetes: calcRefs.diabetes,
-  "Current smoking": calcRefs.smoking,
-  "BMI <30, per 5 kg/m2": `(MIN(${calcRefs.bmi},30)-25)/5`,
-  "BMI 30+, per 5 kg/m2": `(MAX(${calcRefs.bmi},30)-30)/5`,
-  "eGFR <60, per -15 ml": `(MIN(${calcRefs.egfr},60)-60)/-15`,
-  "eGFR 60+, per -15 ml": `(MAX(${calcRefs.egfr},60)-90)/-15`,
-  "Anti-hypertensive use": calcRefs.antihtn,
-  "Statin use": calcRefs.statin,
-  "Treated SBP ≥110 mm Hg per 20 mm Hg": `((MAX(${calcRefs.sbp},110)-130)/20)*${calcRefs.antihtn}`,
-  "Treated non-HDL-C": `((((${calcRefs.tc}-${calcRefs.hdl})*0.02586)-3.5))*${calcRefs.statin}`,
-  "Age per 10yr * non-HDL-C per 1 mmol/L": `(((${calcRefs.age}-55)/10)*(((((${calcRefs.tc}-${calcRefs.hdl})*0.02586)-3.5))))`,
-  "Age per 10yr * HDL-C per 0.3 mml/L": `(((${calcRefs.age}-55)/10)*(((${calcRefs.hdl}*0.02586)-1.3)/0.3))`,
-  "Age per 10yr * SBP ≥110 mm Hg per 20 mmHg": `(((${calcRefs.age}-55)/10)*((MAX(${calcRefs.sbp},110)-130)/20))`,
-  "Age per 10yr * diabetes": `(((${calcRefs.age}-55)/10)*${calcRefs.diabetes})`,
-  "Age per 10yr * current smoking": `(((${calcRefs.age}-55)/10)*${calcRefs.smoking})`,
-  "Age per 10yr * BMI 30+ per 5 kg/m2": `(((${calcRefs.age}-55)/10)*((MAX(${calcRefs.bmi},30)-30)/5))`,
-  "Age per 10yr * eGFR <60, per -15 ml": `(((${calcRefs.age}-55)/10)*((MIN(${calcRefs.egfr},60)-60)/-15))`,
-  "SDI decile categories 4-6 vs. 1-3": `IF(AND(${calcRefs.sdi}<>"",${calcRefs.sdi}>=4,${calcRefs.sdi}<=6),1,0)`,
-  "SDI decile categories 7-10 vs. 1-3": `IF(AND(${calcRefs.sdi}<>"",${calcRefs.sdi}>=7,${calcRefs.sdi}<=10),1,0)`,
-  "Missing SDI": `IF(${calcRefs.sdi}="",1,0)`,
-  "ln-UACR, mg/g, per 1 ln unit": `IF(OR(${calcRefs.uacr}="",${calcRefs.uacr}=0),0,LN(${calcRefs.uacr}))`,
-  "Missing UACR/PCR/Dipstick": `IF(${calcRefs.uacr}="",1,0)`,
-  "HbA1c in DM, per 1%": `IF(${calcRefs.hba1c}="",0,(${calcRefs.hba1c}-5.3)*${calcRefs.diabetes})`,
-  "HbA1c no DM, per 1%": `IF(${calcRefs.hba1c}="",0,(${calcRefs.hba1c}-5.3)*(1-${calcRefs.diabetes}))`,
-  "Missing HbA1c": `IF(${calcRefs.hba1c}="",1,0)`,
-  Constant: "1",
-};
+function termFormula(term, row) {
+  const refs = calcRefs(row);
+  const formulas = {
+    "Age per 10 years": `(${refs.age}-55)/10`,
+    "Age per 10 years squared": `((${refs.age}-55)/10)^2`,
+    "non-HDL-C per 1 mmol/L": `((${refs.tc}-${refs.hdl})*0.02586)-3.5`,
+    "HDL-C per 0.3 mmol/L": `((${refs.hdl}*0.02586)-1.3)/0.3`,
+    "SBP <110 per 20 mmHg": `(MIN(${refs.sbp},110)-110)/20`,
+    "SBP ≥110 per 20 mmHg": `(MAX(${refs.sbp},110)-130)/20`,
+    Diabetes: refs.diabetes,
+    "Current smoking": refs.smoking,
+    "BMI <30, per 5 kg/m2": `(MIN(${refs.bmi},30)-25)/5`,
+    "BMI 30+, per 5 kg/m2": `(MAX(${refs.bmi},30)-30)/5`,
+    "eGFR <60, per -15 ml": `(MIN(${refs.egfr},60)-60)/-15`,
+    "eGFR 60+, per -15 ml": `(MAX(${refs.egfr},60)-90)/-15`,
+    "Anti-hypertensive use": refs.antihtn,
+    "Statin use": refs.statin,
+    "Treated SBP ≥110 mm Hg per 20 mm Hg": `((MAX(${refs.sbp},110)-130)/20)*${refs.antihtn}`,
+    "Treated non-HDL-C": `((((${refs.tc}-${refs.hdl})*0.02586)-3.5))*${refs.statin}`,
+    "Age per 10yr * non-HDL-C per 1 mmol/L": `(((${refs.age}-55)/10)*(((((${refs.tc}-${refs.hdl})*0.02586)-3.5))))`,
+    "Age per 10yr * HDL-C per 0.3 mml/L": `(((${refs.age}-55)/10)*(((${refs.hdl}*0.02586)-1.3)/0.3))`,
+    "Age per 10yr * SBP ≥110 mm Hg per 20 mmHg": `(((${refs.age}-55)/10)*((MAX(${refs.sbp},110)-130)/20))`,
+    "Age per 10yr * diabetes": `(((${refs.age}-55)/10)*${refs.diabetes})`,
+    "Age per 10yr * current smoking": `(((${refs.age}-55)/10)*${refs.smoking})`,
+    "Age per 10yr * BMI 30+ per 5 kg/m2": `(((${refs.age}-55)/10)*((MAX(${refs.bmi},30)-30)/5))`,
+    "Age per 10yr * eGFR <60, per -15 ml": `(((${refs.age}-55)/10)*((MIN(${refs.egfr},60)-60)/-15))`,
+    "SDI decile categories 4-6 vs. 1-3": `IF(AND(${refs.sdi}<>"",${refs.sdi}>=4,${refs.sdi}<=6),1,0)`,
+    "SDI decile categories 7-10 vs. 1-3": `IF(AND(${refs.sdi}<>"",${refs.sdi}>=7,${refs.sdi}<=10),1,0)`,
+    "Missing SDI": `IF(${refs.sdi}="",1,0)`,
+    "ln-UACR, mg/g, per 1 ln unit": `IF(OR(${refs.uacr}="",${refs.uacr}=0),0,LN(${refs.uacr}))`,
+    "Missing UACR/PCR/Dipstick": `IF(${refs.uacr}="",1,0)`,
+    "HbA1c in DM, per 1%": `IF(${refs.hba1c}="",0,(${refs.hba1c}-5.3)*${refs.diabetes})`,
+    "HbA1c no DM, per 1%": `IF(${refs.hba1c}="",0,(${refs.hba1c}-5.3)*(1-${refs.diabetes}))`,
+    "Missing HbA1c": `IF(${refs.hba1c}="",1,0)`,
+    Constant: "1",
+  };
+
+  return formulas[term];
+}
 
 const DEFAULT_INPUTS = {
   sex: "Women",
@@ -331,7 +341,7 @@ async function main() {
   workbook.calcProperties.fullCalcOnLoad = true;
 
   const calculator = workbook.addWorksheet("Calculator", {
-    views: [{ state: "frozen", xSplit: 3, ySplit: 4 }],
+    views: [{ state: "frozen", xSplit: 2, ySplit: CALCULATOR_HEADER_ROW }],
   });
   const sources = workbook.addWorksheet("Sources");
   const engine = workbook.addWorksheet("Engine");
@@ -339,187 +349,233 @@ async function main() {
   engine.state = "hidden";
   coefficientSheet.state = "hidden";
 
+  const inputColumns = [
+    { key: "record", header: "Scenario", width: 18 },
+    { key: "sex", header: "Sex", width: 10 },
+    { key: "age", header: "Age", width: 9 },
+    { key: "tc", header: "Total chol", width: 12 },
+    { key: "hdl", header: "HDL-C", width: 10 },
+    { key: "sbp", header: "SBP", width: 10 },
+    { key: "diabetes", header: "Diabetes", width: 11 },
+    { key: "smoking", header: "Smoking", width: 11 },
+    { key: "bmi", header: "BMI", width: 10 },
+    { key: "egfr", header: "eGFR", width: 10 },
+    { key: "antihtn", header: "Anti-HTN", width: 11 },
+    { key: "statin", header: "Statin", width: 10 },
+    { key: "uacr", header: "UACR", width: 10 },
+    { key: "hba1c", header: "HbA1c", width: 10 },
+    { key: "sdi", header: "SDI", width: 9 },
+  ];
+  const modelHeaders = ["Base", "UACR", "HbA1c", "SDI", "Full"];
+  const outputStartColumn = inputColumns.length + 1;
+  const outputColumnsPerHorizon = modelHeaders.length * OUTCOMES.length;
+  const totalColumnCount = inputColumns.length + outputColumnsPerHorizon * 2;
+  const lastColumnLetter = colLetter(totalColumnCount);
+
   calculator.columns = [
-    { width: 34 },
-    { width: 16 },
-    { width: 18 },
-    { width: 24 },
-    { width: 16 },
-    { width: 12 },
-    { width: 12 },
-    { width: 12 },
-    { width: 12 },
+    ...inputColumns.map((column) => ({ width: column.width })),
+    ...Array.from({ length: outputColumnsPerHorizon * 2 }, () => ({ width: 11 })),
   ];
 
-  calculator.mergeCells("A1:I1");
+  calculator.mergeCells(`A1:${lastColumnLetter}1`);
   calculator.getCell("A1").value = "AHA PREVENT Excel Calculator";
   calculator.getCell("A1").font = { bold: true, size: 16 };
 
-  calculator.mergeCells("A2:I2");
+  calculator.mergeCells(`A2:${lastColumnLetter}2`);
   calculator.getCell("A2").value =
     "Implements the published simplified PREVENT equations from Circulation 149(6):430-449 (February 6, 2024), Supplemental Tables S12A-J.";
   calculator.getCell("A2").font = { italic: true, color: { argb: "FF555555" } };
 
+  calculator.mergeCells(`A3:O3`);
+  calculator.getCell("A3").value =
+    "Enter one patient or scenario per row starting on row 6. Optional variables are UACR, HbA1c, and SDI. Rows with missing required inputs stay blank.";
+  calculator.getCell("A3").alignment = { wrapText: true };
+  calculator.getCell("A3").font = { italic: true, color: { argb: "FF555555" } };
   styleSectionTitle(calculator.getCell("A4"));
   calculator.getCell("A4").value = "Inputs";
-  calculator.getCell("A5").value = "Sex";
-  calculator.getCell("A6").value = "Age, years";
-  calculator.getCell("A7").value = "Total cholesterol, mg/dL";
-  calculator.getCell("A8").value = "HDL-C, mg/dL";
-  calculator.getCell("A9").value = "Systolic BP, mmHg";
-  calculator.getCell("A10").value = "Diabetes";
-  calculator.getCell("A11").value = "Current smoking";
-  calculator.getCell("A12").value = "BMI, kg/m2";
-  calculator.getCell("A13").value = "eGFR, mL/min/1.73m2";
-  calculator.getCell("A14").value = "Anti-hypertension medication";
-  calculator.getCell("A15").value = "Statin use";
-  calculator.getCell("A16").value = "UACR, mg/g (optional)";
-  calculator.getCell("A17").value = "HbA1c, % (optional)";
-  calculator.getCell("A18").value = "SDI decile 1-10 (optional)";
 
-  calculator.getCell("B5").value = DEFAULT_INPUTS.sex;
-  calculator.getCell("B6").value = DEFAULT_INPUTS.age;
-  calculator.getCell("B7").value = DEFAULT_INPUTS.tc;
-  calculator.getCell("B8").value = DEFAULT_INPUTS.hdl;
-  calculator.getCell("B9").value = DEFAULT_INPUTS.sbp;
-  calculator.getCell("B10").value = DEFAULT_INPUTS.diabetes ? "Yes" : "No";
-  calculator.getCell("B11").value = DEFAULT_INPUTS.smoking ? "Yes" : "No";
-  calculator.getCell("B12").value = DEFAULT_INPUTS.bmi;
-  calculator.getCell("B13").value = DEFAULT_INPUTS.egfr;
-  calculator.getCell("B14").value = DEFAULT_INPUTS.antihtn ? "Yes" : "No";
-  calculator.getCell("B15").value = DEFAULT_INPUTS.statin ? "Yes" : "No";
-  calculator.getCell("B16").value = DEFAULT_INPUTS.uacr;
-  calculator.getCell("B17").value = DEFAULT_INPUTS.hba1c;
-  calculator.getCell("B18").value = DEFAULT_INPUTS.sdi;
+  const tenYearStartColumn = outputStartColumn;
+  const thirtyYearStartColumn = outputStartColumn + outputColumnsPerHorizon;
 
-  for (const address of ["B5", "B10", "B11", "B14", "B15"]) {
-    calculator.getCell(address).dataValidation = {
-      type: "list",
-      allowBlank: false,
-      formulae: address === "B5" ? ['"Women,Men"'] : ['"No,Yes"'],
+  calculator.mergeCells(`P3:${colLetter(thirtyYearStartColumn - 1)}3`);
+  calculator.getCell("P3").value = "10-year risk";
+  styleSectionTitle(calculator.getCell("P3"));
+
+  calculator.mergeCells(
+    `${colLetter(thirtyYearStartColumn)}3:${lastColumnLetter}3`,
+  );
+  calculator.getCell(`${colLetter(thirtyYearStartColumn)}3`).value = "30-year risk";
+  styleSectionTitle(calculator.getCell(`${colLetter(thirtyYearStartColumn)}3`));
+
+  calculator.getRow(CALCULATOR_HEADER_ROW).height = 32;
+  inputColumns.forEach((column, index) => {
+    const cell = calculator.getCell(CALCULATOR_HEADER_ROW, index + 1);
+    cell.value = column.header;
+    cell.font = { bold: true };
+    cell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FFEAF4FB" },
+    };
+    cell.alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+  });
+
+  function applyOutputHeader(startColumn) {
+    modelHeaders.forEach((model, modelIndex) => {
+      const blockStart = startColumn + modelIndex * OUTCOMES.length;
+      const blockEnd = blockStart + OUTCOMES.length - 1;
+      calculator.mergeCells(
+        `${colLetter(blockStart)}4:${colLetter(blockEnd)}4`,
+      );
+      const titleCell = calculator.getCell(4, blockStart);
+      titleCell.value = model;
+      styleSectionTitle(titleCell);
+      titleCell.alignment = { horizontal: "center" };
+      OUTCOMES.forEach((outcome, outcomeIndex) => {
+        const headerCell = calculator.getCell(
+          CALCULATOR_HEADER_ROW,
+          blockStart + outcomeIndex,
+        );
+        headerCell.value = outcome;
+        headerCell.font = { bold: true };
+        headerCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFEAF4FB" },
+        };
+        headerCell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+      });
+    });
+  }
+
+  applyOutputHeader(tenYearStartColumn);
+  applyOutputHeader(thirtyYearStartColumn);
+
+  calculator.autoFilter = {
+    from: { row: CALCULATOR_HEADER_ROW, column: 1 },
+    to: { row: CALCULATOR_HEADER_ROW, column: totalColumnCount },
+  };
+
+  const defaultRow = CALCULATOR_DATA_START_ROW;
+  calculator.getCell(`A${defaultRow}`).value = "Example";
+  calculator.getCell(`B${defaultRow}`).value = DEFAULT_INPUTS.sex;
+  calculator.getCell(`C${defaultRow}`).value = DEFAULT_INPUTS.age;
+  calculator.getCell(`D${defaultRow}`).value = DEFAULT_INPUTS.tc;
+  calculator.getCell(`E${defaultRow}`).value = DEFAULT_INPUTS.hdl;
+  calculator.getCell(`F${defaultRow}`).value = DEFAULT_INPUTS.sbp;
+  calculator.getCell(`G${defaultRow}`).value = DEFAULT_INPUTS.diabetes ? "Yes" : "No";
+  calculator.getCell(`H${defaultRow}`).value = DEFAULT_INPUTS.smoking ? "Yes" : "No";
+  calculator.getCell(`I${defaultRow}`).value = DEFAULT_INPUTS.bmi;
+  calculator.getCell(`J${defaultRow}`).value = DEFAULT_INPUTS.egfr;
+  calculator.getCell(`K${defaultRow}`).value = DEFAULT_INPUTS.antihtn ? "Yes" : "No";
+  calculator.getCell(`L${defaultRow}`).value = DEFAULT_INPUTS.statin ? "Yes" : "No";
+  calculator.getCell(`M${defaultRow}`).value = DEFAULT_INPUTS.uacr;
+  calculator.getCell(`N${defaultRow}`).value = DEFAULT_INPUTS.hba1c;
+  calculator.getCell(`O${defaultRow}`).value = DEFAULT_INPUTS.sdi;
+
+  const dataEndRow = CALCULATOR_DATA_START_ROW + MAX_CALCULATOR_ROWS - 1;
+  for (let row = CALCULATOR_DATA_START_ROW; row <= dataEndRow; row += 1) {
+    for (const column of ["B", "G", "H", "K", "L"]) {
+      calculator.getCell(`${column}${row}`).dataValidation = {
+        type: "list",
+        allowBlank: column !== "B",
+        formulae: column === "B" ? ['"Women,Men"'] : ['"No,Yes"'],
+      };
+    }
+    calculator.getCell(`C${row}`).dataValidation = {
+      type: "whole",
+      operator: "between",
+      allowBlank: true,
+      formulae: [30, 79],
+    };
+    calculator.getCell(`D${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [130, 320],
+    };
+    calculator.getCell(`E${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [20, 100],
+    };
+    calculator.getCell(`F${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [90, 200],
+    };
+    calculator.getCell(`I${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [18.5, 39.999],
+    };
+    calculator.getCell(`J${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [15, 150],
+    };
+    calculator.getCell(`M${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [0.1, 25000],
+    };
+    calculator.getCell(`N${row}`).dataValidation = {
+      type: "decimal",
+      operator: "between",
+      allowBlank: true,
+      formulae: [3, 15],
+    };
+    calculator.getCell(`O${row}`).dataValidation = {
+      type: "whole",
+      operator: "between",
+      allowBlank: true,
+      formulae: [1, 10],
     };
   }
 
-  calculator.getCell("B6").dataValidation = {
-    type: "whole",
-    operator: "between",
-    allowBlank: false,
-    formulae: [30, 79],
-  };
-  calculator.getCell("B7").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: false,
-    formulae: [130, 320],
-  };
-  calculator.getCell("B8").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: false,
-    formulae: [20, 100],
-  };
-  calculator.getCell("B9").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: false,
-    formulae: [90, 200],
-  };
-  calculator.getCell("B12").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: false,
-    formulae: [18.5, 39.999],
-  };
-  calculator.getCell("B13").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: false,
-    formulae: [15, 150],
-  };
-  calculator.getCell("B16").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: true,
-    formulae: [0.1, 25000],
-  };
-  calculator.getCell("B17").dataValidation = {
-    type: "decimal",
-    operator: "between",
-    allowBlank: true,
-    formulae: [3, 15],
-  };
-  calculator.getCell("B18").dataValidation = {
-    type: "whole",
-    operator: "between",
-    allowBlank: true,
-    formulae: [1, 10],
-  };
-
-  styleSectionTitle(calculator.getCell("D4"));
-  calculator.getCell("D4").value = "10-year risk";
-  styleSectionTitle(calculator.getCell("D13"));
-  calculator.getCell("D13").value = "30-year risk";
-
-  const modelHeaders = ["Base", "UACR", "HbA1c", "SDI", "Full"];
-  const firstOutputColumn = 5;
-
-  calculator.getCell("D5").value = "Outcome";
-  calculator.getCell("D14").value = "Outcome";
-  for (let index = 0; index < modelHeaders.length; index += 1) {
-    calculator.getCell(5, firstOutputColumn + index).value = modelHeaders[index];
-    calculator.getCell(14, firstOutputColumn + index).value = modelHeaders[index];
-  }
-
-  OUTCOMES.forEach((outcome, index) => {
-    calculator.getCell(6 + index, 4).value = outcome;
-    calculator.getCell(15 + index, 4).value = outcome;
-  });
-
-  for (const row of [5, 14]) {
-    for (let col = 4; col <= 9; col += 1) {
+  for (let row = CALCULATOR_DATA_START_ROW; row <= dataEndRow; row += 1) {
+    for (let col = 1; col <= totalColumnCount; col += 1) {
       const cell = calculator.getCell(row, col);
-      cell.font = { bold: true };
-      cell.fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFEAF4FB" },
-      };
       cell.border = {
-        bottom: { style: "thin", color: { argb: "FFB8CFE1" } },
+        bottom: { style: "hair", color: { argb: "FFE3E3E3" } },
       };
+      if (col <= inputColumns.length) {
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: row === defaultRow ? "FFFDF8E3" : "FFFFFFFF" },
+        };
+      }
     }
   }
 
-  calculator.getCell("A20").value =
-    "Use Base when optional predictors are unavailable. Use the UACR, HbA1c, or SDI columns for the corresponding single enhanced model. The Full column includes all three optional predictors and published missing-indicator handling.";
-  calculator.mergeCells("A20:I20");
-  calculator.getCell("A20").alignment = { wrapText: true };
-  calculator.getCell("A20").font = { italic: true, color: { argb: "FF555555" } };
+  engine.columns = [{ width: 14 }, { width: 42 }, { width: 18 }];
+  engine.getCell("A1").value = "Calc row";
+  engine.getCell("B1").value = "Term";
+  engine.getCell("C1").value = "Derived value";
 
-  calculator.getCell("A21").value =
-    "The PREVENT paper excluded extreme values outside the ranges shown above and reports that Total CVD and ASCVD risks are less than the sum of component outcomes because a person can experience more than one event.";
-  calculator.mergeCells("A21:I21");
-  calculator.getCell("A21").alignment = { wrapText: true };
-  calculator.getCell("A21").font = { italic: true, color: { argb: "FF555555" } };
+  function engineBlockStart(calculatorRow) {
+    return 2 + (calculatorRow - CALCULATOR_DATA_START_ROW) * TERM_ORDER.length;
+  }
 
-  calculator.eachRow((row, rowNumber) => {
-    if (rowNumber >= 5 && rowNumber <= 18) {
-      row.eachCell((cell) => {
-        cell.border = {
-          bottom: { style: "hair", color: { argb: "FFE3E3E3" } },
-        };
-      });
-    }
-  });
-
-  engine.columns = [{ width: 42 }, { width: 18 }];
-  engine.getCell("A1").value = "Term";
-  engine.getCell("B1").value = "Derived value";
-  TERM_ORDER.forEach((term, index) => {
-    const row = index + 2;
-    engine.getCell(row, 1).value = term;
-    engine.getCell(row, 2).value = { formula: FORMULAS[term] };
-  });
+  for (let calculatorRow = CALCULATOR_DATA_START_ROW; calculatorRow <= dataEndRow; calculatorRow += 1) {
+    const blockStart = engineBlockStart(calculatorRow);
+    TERM_ORDER.forEach((term, index) => {
+      const row = blockStart + index;
+      engine.getCell(row, 1).value = calculatorRow;
+      engine.getCell(row, 2).value = term;
+      engine.getCell(row, 3).value = { formula: termFormula(term, calculatorRow) };
+    });
+  }
 
   coefficientSheet.getCell("A1").value = "Term";
   const coeffColumnByKey = {};
@@ -549,20 +605,26 @@ async function main() {
     }
   }
 
-  const engineRange = `$B$2:$B$${TERM_ORDER.length + 1}`;
   const derivedValues = computeDerived(DEFAULT_INPUTS);
 
-  function outputFormula(model, horizon, outcome) {
+  function rowReadyFormula(row) {
+    return `OR($B${row}="",$C${row}="",$D${row}="",$E${row}="",$F${row}="",$G${row}="",$H${row}="",$I${row}="",$J${row}="",$K${row}="",$L${row}="")`;
+  }
+
+  function outputFormula(model, horizon, outcome, row) {
     const womenKey = `${model}|${horizon}|${outcome}|Women`;
     const menKey = `${model}|${horizon}|${outcome}|Men`;
     const womenColumn = colLetter(coeffColumnByKey[womenKey]);
     const menColumn = colLetter(coeffColumnByKey[menKey]);
     const coeffRowStart = 2;
     const coeffRowEnd = TERM_ORDER.length + 1;
+    const engineStart = engineBlockStart(row);
+    const engineEnd = engineStart + TERM_ORDER.length - 1;
+    const engineRange = `Engine!$C$${engineStart}:$C$${engineEnd}`;
     const womenRange = `"Coefficients!$${womenColumn}$${coeffRowStart}:$${womenColumn}$${coeffRowEnd}"`;
     const menRange = `"Coefficients!$${menColumn}$${coeffRowStart}:$${menColumn}$${coeffRowEnd}"`;
 
-    return `IF($B$5="Women",1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},INDIRECT(${womenRange})))),1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},INDIRECT(${menRange})))))`;
+    return `IF(${rowReadyFormula(row)},"",IF($B${row}="Women",1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${womenRange})))),1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${menRange}))))))`;
   }
 
   function outputResult(model, horizon, outcome) {
@@ -570,28 +632,33 @@ async function main() {
     return computeRisk(coefficients, derivedValues, outcome, DEFAULT_INPUTS.sex);
   }
 
-  modelHeaders.forEach((model, modelIndex) => {
-    OUTCOMES.forEach((outcome, outcomeIndex) => {
-      const tenYearCell = calculator.getCell(6 + outcomeIndex, firstOutputColumn + modelIndex);
-      tenYearCell.value = {
-        formula: outputFormula(model, "10-year", outcome),
-        result: outputResult(model, "10-year", outcome),
-      };
-      tenYearCell.numFmt = "0.0%";
-      tenYearCell.alignment = { horizontal: "center" };
+  for (let row = CALCULATOR_DATA_START_ROW; row <= dataEndRow; row += 1) {
+    modelHeaders.forEach((model, modelIndex) => {
+      OUTCOMES.forEach((outcome, outcomeIndex) => {
+        const tenYearCell = calculator.getCell(
+          row,
+          tenYearStartColumn + modelIndex * OUTCOMES.length + outcomeIndex,
+        );
+        tenYearCell.value = {
+          formula: outputFormula(model, "10-year", outcome, row),
+          result: row === defaultRow ? outputResult(model, "10-year", outcome) : null,
+        };
+        tenYearCell.numFmt = "0.0%";
+        tenYearCell.alignment = { horizontal: "center" };
 
-      const thirtyYearCell = calculator.getCell(
-        15 + outcomeIndex,
-        firstOutputColumn + modelIndex,
-      );
-      thirtyYearCell.value = {
-        formula: outputFormula(model, "30-year", outcome),
-        result: outputResult(model, "30-year", outcome),
-      };
-      thirtyYearCell.numFmt = "0.0%";
-      thirtyYearCell.alignment = { horizontal: "center" };
+        const thirtyYearCell = calculator.getCell(
+          row,
+          thirtyYearStartColumn + modelIndex * OUTCOMES.length + outcomeIndex,
+        );
+        thirtyYearCell.value = {
+          formula: outputFormula(model, "30-year", outcome, row),
+          result: row === defaultRow ? outputResult(model, "30-year", outcome) : null,
+        };
+        thirtyYearCell.numFmt = "0.0%";
+        thirtyYearCell.alignment = { horizontal: "center" };
+      });
     });
-  });
+  }
 
   sources.columns = [{ width: 26 }, { width: 110 }];
   sources.getCell("A1").value = "Source";
