@@ -4,9 +4,6 @@ node_modules/
 # macOS
 .DS_Store
 
-# generated workbook
-prevent_calculator.xlsx
-
 # scratch/download artifacts
 pmc_*.js
 pmc_*.decoded.js

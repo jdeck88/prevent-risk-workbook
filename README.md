@@ -4,19 +4,13 @@ Excel implementation of the AHA PREVENT cardiovascular risk calculator using the
 
 ## Get Started
 
-1. Download this project from GitHub to your computer.
-2. Open the project folder.
-3. Generate the Excel file by running:
+1. Download `prevent_calculator.xlsx` from this GitHub repository.
+2. Open `prevent_calculator.xlsx` in Microsoft Excel.
+3. Go to the `Calculator` sheet.
+4. Enter values in column `B`.
+5. Read the 10-year and 30-year risk estimates shown on the right.
 
-```bash
-npm install
-npm run build
-```
-
-4. Open `prevent_calculator.xlsx` in Microsoft Excel.
-5. Go to the `Calculator` sheet.
-6. Enter values in column `B`.
-7. Read the 10-year and 30-year risk estimates shown on the right.
+If you are viewing the repository on GitHub, open the file `prevent_calculator.xlsx` and download it to your computer.
 
 ## What to Enter
 
@@ -49,6 +43,15 @@ Enter the following values as available:
 
 - The workbook reproduces the published simplified PREVENT equations in Excel format.
 - It is not the official AHA web calculator.
+
+## For Maintainers
+
+If you need to rebuild the workbook from source files:
+
+```bash
+npm install
+npm run build
+```
 
 ## Source
 
