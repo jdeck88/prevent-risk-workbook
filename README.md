@@ -39,6 +39,38 @@ Enter the following values as available:
 - `SDI`: use when SDI is available
 - `Full`: use when all optional variables are available
 
+## If an Input Is Uncertain
+
+If a variable does not fit cleanly into one of the workbook choices:
+
+- Do not guess if you can avoid it.
+- Use the best documented value from the chart, intake form, or patient interview.
+- If you still are not sure, leave optional fields blank rather than forcing a value.
+- For required yes/no fields, use the most defensible current clinical classification and document your assumption outside the workbook.
+
+Examples:
+
+- Smoking:
+  If the patient is clearly a current smoker, use `Yes`.
+  If the patient clearly does not currently smoke, use `No`.
+  If the status is uncertain, clarify before using the result for decision-making.
+
+- Diabetes, statin use, or anti-hypertension medication:
+  Use the patient's current status at the time you are estimating risk.
+  If the medication was prescribed but it is unclear whether the patient is actually taking it, confirm before relying on the estimate.
+
+- Lab values such as cholesterol, eGFR, UACR, or HbA1c:
+  Use the most recent reliable value available.
+  If an optional lab is missing, leave it blank and use the corresponding simpler model column.
+
+- SDI:
+  If you do not have a valid SDI decile, leave it blank and do not use the SDI or Full column as your primary result.
+
+Practical rule:
+
+- If an input is uncertain, run the calculator using only values you trust.
+- If needed, test more than one plausible value and treat the result as a sensitivity check rather than a final answer.
+
 ## Notes
 
 - The workbook reproduces the published simplified PREVENT equations in Excel format.
