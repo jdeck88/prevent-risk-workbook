@@ -557,9 +557,12 @@ async function main() {
     const menKey = `${model}|${horizon}|${outcome}|Men`;
     const womenColumn = colLetter(coeffColumnByKey[womenKey]);
     const menColumn = colLetter(coeffColumnByKey[menKey]);
-    const coeffRows = `$2:$${TERM_ORDER.length + 1}`;
+    const coeffRowStart = 2;
+    const coeffRowEnd = TERM_ORDER.length + 1;
+    const womenRange = `"Coefficients!$${womenColumn}$${coeffRowStart}:$${womenColumn}$${coeffRowEnd}"`;
+    const menRange = `"Coefficients!$${menColumn}$${coeffRowStart}:$${menColumn}$${coeffRowEnd}"`;
 
-    return `IF($B$5="Women",1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},Coefficients!$${womenColumn}${coeffRows}))),1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},Coefficients!$${menColumn}${coeffRows}))))`;
+    return `IF($B$5="Women",1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},INDIRECT(${womenRange})))),1/(1+EXP(-SUMPRODUCT(Engine!${engineRange},INDIRECT(${menRange})))))`;
   }
 
   function outputResult(model, horizon, outcome) {
