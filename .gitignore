@@ -1,0 +1,15 @@
+node_modules/
+*.log
+
+# macOS
+.DS_Store
+
+# generated workbook
+prevent_calculator.xlsx
+
+# scratch/download artifacts
+pmc_*.js
+pmc_*.decoded.js
+prevent_paper.html
+prevent_paper.pdf
+prevent_supplemental_tables.xlsx
