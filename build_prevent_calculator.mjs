@@ -12,7 +12,7 @@ const OUTCOMES = [
   "Stroke",
 ];
 
-const SEXES = ["Women", "Men"];
+const SEXES = ["Female", "Male"];
 const MAX_CALCULATOR_ROWS = 1000;
 const CALCULATOR_HEADER_ROW = 5;
 const CALCULATOR_DATA_START_ROW = 6;
@@ -31,16 +31,16 @@ const MODEL_SHEETS = [
 ];
 
 const COLUMN_MAP = [
-  { col: 2, outcome: "Total CVD", sex: "Women" },
-  { col: 3, outcome: "Total CVD", sex: "Men" },
-  { col: 4, outcome: "ASCVD", sex: "Women" },
-  { col: 5, outcome: "ASCVD", sex: "Men" },
-  { col: 6, outcome: "Heart Failure", sex: "Women" },
-  { col: 7, outcome: "Heart Failure", sex: "Men" },
-  { col: 8, outcome: "Coronary Heart Disease", sex: "Women" },
-  { col: 9, outcome: "Coronary Heart Disease", sex: "Men" },
-  { col: 10, outcome: "Stroke", sex: "Women" },
-  { col: 11, outcome: "Stroke", sex: "Men" },
+  { col: 2, outcome: "Total CVD", sex: "Female" },
+  { col: 3, outcome: "Total CVD", sex: "Male" },
+  { col: 4, outcome: "ASCVD", sex: "Female" },
+  { col: 5, outcome: "ASCVD", sex: "Male" },
+  { col: 6, outcome: "Heart Failure", sex: "Female" },
+  { col: 7, outcome: "Heart Failure", sex: "Male" },
+  { col: 8, outcome: "Coronary Heart Disease", sex: "Female" },
+  { col: 9, outcome: "Coronary Heart Disease", sex: "Male" },
+  { col: 10, outcome: "Stroke", sex: "Female" },
+  { col: 11, outcome: "Stroke", sex: "Male" },
 ];
 
 const TERM_ORDER = [
@@ -138,7 +138,7 @@ function termFormula(term, row) {
 }
 
 const DEFAULT_INPUTS = {
-  sex: "Women",
+  sex: "Female",
   age: 50,
   tc: 200,
   hdl: 45,
@@ -483,7 +483,7 @@ async function main() {
       calculator.getCell(`${column}${row}`).dataValidation = {
         type: "list",
         allowBlank: column !== "B",
-        formulae: column === "B" ? ['"Women,Men"'] : ['"No,Yes"'],
+        formulae: column === "B" ? ['"Female,Male"'] : ['"No,Yes"'],
       };
     }
     calculator.getCell(`C${row}`).dataValidation = {
@@ -612,19 +612,19 @@ async function main() {
   }
 
   function outputFormula(model, horizon, outcome, row) {
-    const womenKey = `${model}|${horizon}|${outcome}|Women`;
-    const menKey = `${model}|${horizon}|${outcome}|Men`;
-    const womenColumn = colLetter(coeffColumnByKey[womenKey]);
-    const menColumn = colLetter(coeffColumnByKey[menKey]);
+    const femaleKey = `${model}|${horizon}|${outcome}|Female`;
+    const maleKey = `${model}|${horizon}|${outcome}|Male`;
+    const femaleColumn = colLetter(coeffColumnByKey[femaleKey]);
+    const maleColumn = colLetter(coeffColumnByKey[maleKey]);
     const coeffRowStart = 2;
     const coeffRowEnd = TERM_ORDER.length + 1;
     const engineStart = engineBlockStart(row);
     const engineEnd = engineStart + TERM_ORDER.length - 1;
     const engineRange = `Engine!$C$${engineStart}:$C$${engineEnd}`;
-    const womenRange = `"Coefficients!$${womenColumn}$${coeffRowStart}:$${womenColumn}$${coeffRowEnd}"`;
-    const menRange = `"Coefficients!$${menColumn}$${coeffRowStart}:$${menColumn}$${coeffRowEnd}"`;
+    const femaleRange = `"Coefficients!$${femaleColumn}$${coeffRowStart}:$${femaleColumn}$${coeffRowEnd}"`;
+    const maleRange = `"Coefficients!$${maleColumn}$${coeffRowStart}:$${maleColumn}$${coeffRowEnd}"`;
 
-    return `IF(${rowReadyFormula(row)},"",IF($B${row}="Women",1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${womenRange})))),1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${menRange}))))))`;
+    return `IF(${rowReadyFormula(row)},"",IF($B${row}="Female",1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${femaleRange})))),1/(1+EXP(-SUMPRODUCT(${engineRange},INDIRECT(${maleRange}))))))`;
   }
 
   function outputResult(model, horizon, outcome) {

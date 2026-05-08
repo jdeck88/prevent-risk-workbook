@@ -14,7 +14,7 @@ If you are viewing the repository on GitHub, open the file `prevent_calculator.x
 
 ## What to Enter
 
-Enter the following values as available:
+Enter the following values as available. For `Sex`, use `Female` or `Male`.
 
 - Sex
 - Age
